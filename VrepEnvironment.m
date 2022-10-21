@@ -28,11 +28,11 @@ classdef VrepEnvironment < rl.env.MATLABEnvironment
             ObservationInfo.Description = 'Pixels Data; Error ;V;w';
             
             % Initialize Action settings   
-            ActionInfo = rlNumericSpec([2 1],'LowerLimit',[0;0],'UpperLimit',[0.01;0.3]);
+            ActionInfo = rlNumericSpec([4 1],'LowerLimit',[0;0;0;0],'UpperLimit',[1;1;1;1]);
             %ActionInfo = rlNumericSpec([1 1],'LowerLimit',0,'UpperLimit',0.0003);
             %ActionInfo = rlNumericSpec([1 1],'LowerLimit',-0.3,'UpperLimit',0.3);
-            ActionInfo.Name = 'Non-linear functions params';
-            ActionInfo.Description = 'Beta, Alpha';
+            ActionInfo.Name = 'Wheel Speeds';
+            ActionInfo.Description = 'w1, w2, w3, w4';
             
             % The following line implements built-in functions of RL env
             this = this@rl.env.MATLABEnvironment(ObservationInfo,ActionInfo);
@@ -87,14 +87,14 @@ classdef VrepEnvironment < rl.env.MATLABEnvironment
                     [returnCode,Position]=sim.simxGetObjectPosition(clientID,SummitXL,-1,sim.simx_opmode_buffer);
                     [returnCode,eulerAngles]=sim.simxGetObjectOrientation(clientID,SummitXL,-1,sim.simx_opmode_buffer);
                     
-                    load('waypoint.mat')
-                    
-                     search_point(:,1) =waypoint(:,1);
-                     search_point(:,2) =waypoint(:,2);
-                     query_point = [Position(1,1),Position(1,2)];
-                     k = dsearchn(search_point,query_point);
-                     this.orn = double(waypoint(k,3));
-                     this.orn_error = double(eulerAngles(1,3) - this.orn); 
+%                     load('waypoint.mat')
+%                     
+%                      search_point(:,1) =waypoint(:,1);
+%                      search_point(:,2) =waypoint(:,2);
+%                      query_point = [Position(1,1),Position(1,2)];
+%                      k = dsearchn(search_point,query_point);
+%                      this.orn = double(waypoint(k,3));
+%                      this.orn_error = double(eulerAngles(1,3) - this.orn); 
                     
                      
                      
@@ -130,16 +130,19 @@ classdef VrepEnvironment < rl.env.MATLABEnvironment
                                 this.LinVel = double(linearVel(1));
                                 this.AngVel = double(angularVel(3));
 
-                                if this.steps <25
-                                    V = 0.5;
-                                else
-                                    V= 0.4;
-                                end
+%                                 if this.steps <25
+%                                     V = 0.5;
+%                                 else
+%                                     V= 0.4;
+%                                 end
+
                                 %w = 0.025*this.error + 1*(Action(1)*this.error + (sign(this.error)*Action(2)*this.error.^2));
                                 %w = 0.05*this.error + sign(this.error)*Action*this.error^.2;
-                                w = Action(1)*this.error +  sign(this.error)*Action(2);
-                                Action(1)
-                                Action(2)
+                                %w = Action(1)*this.error +  sign(this.error)*Action(2);
+                                w1 = double(Action(1));
+                                w2 = double(Action(2));
+                                w3 = double(Action(3));
+                                w4 = double(Action(4));
                                 
 %                                 load('LinearAction.mat')
 %                                 load('NonLinearAction.mat')
@@ -151,28 +154,28 @@ classdef VrepEnvironment < rl.env.MATLABEnvironment
 %                                 save('NonLinearAction.mat','NonLinearAction')
 %                                 save('Error.mat','Error') 
                                 
-                                if w == 0
-                                    w = double(0.0000001);
-                                end
+%                                 if w == 0
+%                                     w = double(0.0000001);
+%                                 end
 
-                                fprintf('Error is %d and Yaw rate is %d',this.error,w)
+                                %fprintf('Error is %d and Yaw rate is %d',this.error,w)
 
-                                wheelrot = skidsteer(V,w);
-                                w_outer = wheelrot(1);
-                                w_inner = wheelrot(2);
+                                %wheelrot = skidsteer(V,w);
+                                %w_outer = wheelrot(1);
+                                %w_inner = wheelrot(2);
 
-                                    if w>0
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWB, -w_outer, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWF, -w_outer, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWB,  w_inner, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWF,  w_inner, sim.simx_opmode_blocking);
+                                    %if w>0
+                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWB, -w1, sim.simx_opmode_blocking);
+                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWF, -w2, sim.simx_opmode_blocking);
+                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWB, w3, sim.simx_opmode_blocking);
+                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWF, w4, sim.simx_opmode_blocking);
 
-                                    else
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWB, -w_inner, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWF, -w_inner, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWB, w_outer, sim.simx_opmode_blocking);
-                                        [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWF, w_outer, sim.simx_opmode_blocking);
-                                    end
+                                    %else
+%                                         [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWB, -w_inner, sim.simx_opmode_blocking);
+%                                         [returnCode] = sim.simxSetJointTargetVelocity(clientID, RWF, -w_inner, sim.simx_opmode_blocking);
+%                                         [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWB, w_outer, sim.simx_opmode_blocking);
+%                                         [returnCode] = sim.simxSetJointTargetVelocity(clientID, LWF, w_outer, sim.simx_opmode_blocking);
+%                                     end
 
                             end
                             

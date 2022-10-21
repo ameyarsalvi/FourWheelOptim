@@ -64,7 +64,7 @@ actorNetwork = [
     reluLayer('Name','relu5')
     fullyConnectedLayer(numActions,'Name','fc8')
     tanhLayer('Name','tanh1')
-    scalingLayer('Name','ActorScaling1','Scale',[0.005;0.15],'Bias',[0.005;0.15])];
+    scalingLayer('Name','ActorScaling1','Scale',[0.;0.5;0.5;0.5],'Bias',[0.5;0.5;0.5;0.5])];
     %scalingLayer('Name','ActorScaling1','Scale',0.00015,'Bias',0.00015)];
     %scalingLayer('Name','ActorScaling1','Scale',0.15,'Bias',0)];
 
@@ -78,14 +78,14 @@ actor = rlDeterministicActorRepresentation(actorNetwork,observationInfo,actionIn
 
 agentOptions = rlDDPGAgentOptions(...
     'SampleTime',0.01,...
-    'TargetSmoothFactor',0.85,...
-    'ExperienceBufferLength',10000,...
-    'DiscountFactor',0.85,...
-    'MiniBatchSize',64);
+    'TargetSmoothFactor',1e-3,...
+    'ExperienceBufferLength',50000,...
+    'DiscountFactor',0.99,...
+    'MiniBatchSize',512);
 
 %agentOptions.NoiseOptions.Variance = [6.25e-5;5.45e-10];
 %agentOptions.NoiseOptions.Variance = 11.56e-10;
-agentOptions.NoiseOptions.Variance = [0.11 * (0.01)^2 ; 0.11 * (0.3)^2];
+agentOptions.NoiseOptions.Variance = (0.01)*ones(4,1);
 agentOptions.NoiseOptions.VarianceDecayRate = 1e-3;
 agentOptions.ResetExperienceBufferBeforeTraining = false;
 %%
@@ -94,7 +94,7 @@ agentOptions.ResetExperienceBufferBeforeTraining = false;
 agent = rlDDPGAgent(actor,critic,agentOptions);
 %%
 maxepisodes = 1500;
-maxsteps = 100;
+maxsteps = 1000;
 trainingOpts = rlTrainingOptions('MaxEpisodes',maxepisodes,'MaxStepsPerEpisode',maxsteps,'Verbose',true,'StopTrainingCriteria','GlobalStepCount','StopTrainingValue',10000000,'Plots',"training-progress");
 % trainOpts.UseParallel = true;
 % trainOpts.ParallelizationOptions.Mode = "async";
@@ -112,7 +112,7 @@ keyboard
  %%
 % %load('StraightLineAgent.mat')
 % 
- simOpts = rlSimulationOptions('MaxSteps',100);
+ simOpts = rlSimulationOptions('MaxSteps',1000);
  experience = sim(env,agent,simOpts);
 
 
